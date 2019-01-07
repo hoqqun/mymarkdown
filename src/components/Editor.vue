@@ -15,11 +15,28 @@
       <textarea class="markdown" v-model="memos[selectedIndex].markdown"></textarea>
       <div class="preview markdown-body" v-html="preview()"></div>
     </div>
+    <div class="drop" type="file" multiple="multiple" @dragleave.prevent @dragover.prevent @drop.prevent="onDrop">
+      <div class="drop__default-container">
+        <label>ファイルを選択
+          <input class="drop__input" type="file" multiple="multiple" @change="onDrop">
+        </label>
+      </div>
+      <div class="file_names">
+        <ul>
+          <li v-for="(name, index) in memos[selectedIndex].files_name">
+            {{ name }}
+            <button @click="deleteFile(index)">削除</button>
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
   import marked from "marked";
+  import Upload from "./Upload.vue"
+
   export default {
     name: "editor",
     props: ["user"],
@@ -27,11 +44,15 @@
       return {
         memos: [
           {
-            markdown: ""
+            markdown: "",
+            files_name: []
           }
         ],
         selectedIndex: 0
       };
+    },
+    components: {
+      Upload: Upload
     },
     created: function() {
       firebase.database().ref("memos/" + this.user.uid).once("value").then( result => {
@@ -57,7 +78,8 @@
       },
       addMemo: function () {
         this.memos.push({
-          markdown: "無題のメモ"
+          markdown: "無題のメモ",
+          files_name: []
         });
       },
       deleteMemo: function() {
@@ -68,7 +90,18 @@
         }
       },
       saveMemos: function() {
+        storageRef = firebase.storage().ref();
+
         firebase.database().ref("memos/" + this.user.uid).set(this.memos);
+      },
+      saveMemo: function(memo) {
+        
+      },
+      saveFiles: function(files) {
+
+      },
+      saveFile: function(file) {
+        
       },
       selectMemo: function(index) {
         this.selectedIndex = index;
@@ -78,6 +111,16 @@
       },
       displayTitle: function(text) {
         return text.split(/\n/)[0];
+      },
+      onDrop: function(event) {
+        let fileList = event.target.files.length ? event.target.files : event.dataTransfer.files;
+
+        for(let i = 0; i < fileList.length; i++){
+          this.memos[this.selectedIndex].files_name.push(fileList[i].name);
+        }
+      },
+      deleteFile: function(index) {
+        this.memos[this.selectedIndex].files.splice(index, 1);
       }
     }
   };
@@ -85,7 +128,7 @@
 
 <style lang="scss" scoped>
   .editorWrapper {
-    display: flex;
+    display: flex;   
   }
   .memoListWrapper {
     width: 20%;
@@ -123,5 +166,9 @@
   .preview {
     width: 40%;
     text-align: left;
+  }
+  .upload {
+    position: absolute;
+    width: 80%;
   }
 </style>
